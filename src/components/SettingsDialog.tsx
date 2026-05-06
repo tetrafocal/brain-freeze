@@ -1,6 +1,8 @@
-import { Component, useContext } from "solid-js";
+import { Component, Show, useContext, createMemo} from "solid-js";
 
 import { SettingsStoreContext } from "../stores/SettingsStore";
+import { getApiVersion, minApiVersion } from "../api/health";
+import { rescan } from "../api/rescan";
 import { Dialog } from "./Dialog";
 
 import formStyles from "./Form.module.css";
@@ -10,7 +12,7 @@ export const SettingsDialog: Component<{ id: string; onClose?: () => void }> = (
   props,
 ) => {
   const { store, setStore } = useContext(SettingsStoreContext);
-
+  const apiVersion = createMemo(async () => getApiVersion(store.apiEndpoint));
   return (
     <Dialog
       id={props.id}
@@ -19,17 +21,29 @@ export const SettingsDialog: Component<{ id: string; onClose?: () => void }> = (
     >
       <label class={formStyles.multiline}>
         <span>API Endpoint</span>
-        <input
-          type="text"
-          name="apiEndpoint"
-          placeholder="https://my-server:12339/"
-          value={store.apiEndpoint}
-          onBlur={(e) =>
-            setStore((settings) => {
-              settings.apiEndpoint = e.target.value;
-            })
-          }
-        />
+        <div class={styles.endpointField}>
+          <input
+            type="text"
+            name="apiEndpoint"
+            placeholder="https://my-server:12339/"
+            value={store.apiEndpoint}
+            onBlur={(e) => {
+              setStore((settings) => {
+                settings.apiEndpoint = e.target.value;
+              });
+            }}
+          />
+          <Show when={apiVersion() !== "-1"}>
+            <span
+              class={styles.endpointValidIcon}
+              aria-label="API endpoint is valid"
+              title="API endpoint is valid">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </span>
+          </Show>
+        </div>
       </label>
       <label class={formStyles.multiline}>
         <span>Download Folder (full path)</span>
@@ -49,6 +63,15 @@ export const SettingsDialog: Component<{ id: string; onClose?: () => void }> = (
           }
         />
       </label>
+      <Show when={minApiVersion(apiVersion(), "1.1")}>
+        <label class={formStyles.multiline}>
+          <span>Rescan Files</span>
+          <span class={formStyles.subtitle}> Triggers a rescan on the client.</span>
+          <button class={styles.button} onClick={() => rescan(store.apiEndpoint)}>
+            Rescan
+          </button>
+        </label>
+      </Show>
     </Dialog>
   );
 };

@@ -12,6 +12,7 @@ import { StoreObject } from "../utils/types";
 export type SettingsStore = {
   apiEndpoint: string;
   downloadFolder: string;
+  validApiEndpoint: boolean;
 };
 
 export type SettingsStoreContextType = StoreObject<SettingsStore> & {};
