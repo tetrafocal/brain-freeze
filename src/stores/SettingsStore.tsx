@@ -19,11 +19,11 @@ export const themeMap = {
 export type SettingsStore = {
   downloadFolder: string;
   theme: keyof typeof themeMap;
-} & endpointState;
+} & EndpointState;
 
-type endpointState = 
+type EndpointState = 
   | { apiEndpoint: string | undefined; isApiEndpointHealthy: false }
-  | { apiEndpoint: string; isApiEndpointHealthy: true };
+  | { apiEndpoint: string; apiVersion: string; isApiEndpointHealthy: true };
 
 export type SettingsStoreContextType = StoreObject<SettingsStore> & {};
 
@@ -38,11 +38,20 @@ export const SettingsStoreProvider: ParentComponent = (props) => {
       downloadFolder: "",
       theme: "rosePine",
       isApiEndpointHealthy: false,
+      apiVersion: "-1",
     },
   );
 
   const apiVersion = createMemo(() => getApiVersion(store.apiEndpoint || ""));
-  createEffect(() => apiVersion(), () => setStore((settings) => {settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersion())}))
+  createEffect(
+    () => apiVersion(), 
+    () => setStore((settings) => {
+      settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersion());
+      if (settings.isApiEndpointHealthy) {
+        settings.apiVersion = apiVersion();
+      }
+    })
+  );
 
   createEffect(
     () => deep(store),

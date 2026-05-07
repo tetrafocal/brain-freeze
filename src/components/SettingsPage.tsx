@@ -4,14 +4,10 @@ import {
   Match, 
   Show, 
   Switch, 
-  createEffect, 
-  createMemo, 
   useContext 
 } from "solid-js";
-
-import { getApiVersion } from "../services/api/health";
+import { supportsRescan } from "../utils/apiVersionUtil";
 import { rescan } from "../services/api/rescan";
-import { isApiEndpointHealthy, minApiVersion } from "../utils/apiVersionUtil";
 import { SettingsStoreContext, themeMap } from "../stores/SettingsStore";
 import formStyles from "./Form.module.css";
 import pageStyles from "./Page.module.css";
@@ -19,14 +15,6 @@ import styles from "./SettingsPage.module.css";
 
 export const SettingsPage: Component = () => {
   const { store, setStore } = useContext(SettingsStoreContext);
-  const apiVersion = createMemo(async () => getApiVersion(store.apiEndpoint || ""));
-  createEffect(
-    () => apiVersion(),
-    () => {
-      setStore((settings) => {
-        settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersion());
-      });
-    });
   return (
     <main class={pageStyles.page}>
       <h1>settings</h1>
@@ -104,7 +92,7 @@ export const SettingsPage: Component = () => {
           </For>
         </select>
       </label>
-      <Show when={minApiVersion(apiVersion(), "1.1")}>
+      <Show when={store.isApiEndpointHealthy && supportsRescan(store.apiVersion)}>
         <label class={formStyles.multiline}>
           <span>Rescan Files</span>
           <span class={formStyles.subtitle}> Triggers a rescan on the client.</span>
