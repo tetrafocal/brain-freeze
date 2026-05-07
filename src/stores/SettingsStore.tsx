@@ -45,10 +45,10 @@ export const SettingsStoreProvider: ParentComponent = (props) => {
   const apiVersion = createMemo(() => getApiVersion(store.apiEndpoint || ""));
   createEffect(
     () => apiVersion(), 
-    () => setStore((settings) => {
-      settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersion());
+    (apiVersionValue) => setStore((settings) => {
+      settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersionValue);
       if (settings.isApiEndpointHealthy) {
-        settings.apiVersion = apiVersion();
+        settings.apiVersion = apiVersionValue;
       }
     })
   );
