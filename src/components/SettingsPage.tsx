@@ -19,7 +19,7 @@ export const SettingsPage: Component = () => {
     <main class={pageStyles.page}>
       <h1>settings</h1>
       <label class={formStyles.multiline}>
-        <span>API Endpoint {store.isApiEndpointHealthy}</span>
+        <span>API Endpoint</span>
         <div class={styles.endpointField}>
           <input
             type="text"
