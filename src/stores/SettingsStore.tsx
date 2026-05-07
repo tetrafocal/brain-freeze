@@ -5,9 +5,11 @@ import {
   deep,
   ParentComponent,
   snapshot,
+  createMemo,
 } from "solid-js";
-
 import { StoreObject } from "../utils/types";
+import { getApiVersion } from "../services/api/health";
+import { isApiEndpointHealthy } from "../utils/apiVersionUtil";
 
 export const themeMap = {
   rosePine: "Rose Pine",
@@ -15,26 +17,32 @@ export const themeMap = {
 };
 
 export type SettingsStore = {
-  apiEndpoint: string;
   downloadFolder: string;
   theme: keyof typeof themeMap;
-  validApiEndpoint: boolean;
-};
+} & endpointState;
+
+type endpointState = 
+  | { apiEndpoint: string | undefined; isApiEndpointHealthy: false }
+  | { apiEndpoint: string; isApiEndpointHealthy: true };
 
 export type SettingsStoreContextType = StoreObject<SettingsStore> & {};
 
 export const SettingsStoreContext = createContext<SettingsStoreContextType>(
   {} as SettingsStoreContextType,
 );
+
 export const SettingsStoreProvider: ParentComponent = (props) => {
   const [store, setStore] = createStore<SettingsStore>(
     JSON.parse(localStorage.getItem("settings") ?? "null") ?? {
       apiEndpoint: "",
       downloadFolder: "",
       theme: "rosePine",
-      validApiEndpoint: false,
+      isApiEndpointHealthy: false,
     },
   );
+
+  const apiVersion = createMemo(() => getApiVersion(store.apiEndpoint || ""));
+  createEffect(() => apiVersion(), () => setStore((settings) => {settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersion())}))
 
   createEffect(
     () => deep(store),
