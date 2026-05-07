@@ -11,7 +11,6 @@ export async function getApiVersion(endpoint: string): Promise<string> {
     .then((response) => {return response.json()})
     .then((data) => { return data.version ? data.version : "1.0"; });
   } catch (e) {
-    console.log(e)
     return "-1";
   }
 };
