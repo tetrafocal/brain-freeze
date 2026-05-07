@@ -4,6 +4,7 @@ import { getApiVersion, minApiVersion } from "../services/api/health";
 import { rescan } from "../services/api/rescan";
 
 import { SettingsStoreContext, themeMap } from "../stores/SettingsStore";
+
 import formStyles from "./Form.module.css";
 import pageStyles from "./Page.module.css";
 import settingsPageStyles from "./SettingsPage.module.css";
@@ -88,11 +89,7 @@ export const SettingsPage: Component = () => {
           }
         >
           <For each={Object.entries(themeMap)}>
-            {keyMap => (
-              <option value={keyMap()[0]}>
-                {keyMap()[1]}
-              </option>
-            )}
+            {(keyMap) => <option value={keyMap()[0]}>{keyMap()[1]}</option>}
           </For>
         </select>
       </label>
@@ -106,5 +103,5 @@ export const SettingsPage: Component = () => {
         </label>
       </Show>
     </main>
-  )
-}
+  );
+};
