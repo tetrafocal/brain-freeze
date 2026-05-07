@@ -1,8 +1,8 @@
-import { Component, Show, useContext, createMemo} from "solid-js";
+import { Component, For, useContext, Show, createMemo } from "solid-js";
 
-import { SettingsStoreContext } from "../stores/SettingsStore";
-import { getApiVersion, minApiVersion } from "../api/health";
-import { rescan } from "../api/rescan";
+import { getApiVersion, minApiVersion } from "../services/api/health";
+import { rescan } from "../services/api/rescan";
+import { SettingsStoreContext, themeMap } from "../stores/SettingsStore";
 import { Dialog } from "./Dialog";
 
 import formStyles from "./Form.module.css";
@@ -62,6 +62,26 @@ export const SettingsDialog: Component<{ id: string; onClose?: () => void }> = (
             })
           }
         />
+      </label>
+      <label class={formStyles.multiline}>
+        <span>Theme</span>
+        <select
+          name="theme"
+          value={store.theme}
+          onChange={(e) =>
+            setStore((settings) => {
+              settings.theme = e.target.value as keyof typeof themeMap;
+            })
+          }
+        >
+          <For each={Object.entries(themeMap)}>
+            {keyMap => (
+              <option value={keyMap()[0]}>
+                {keyMap()[1]}
+              </option>
+            )}
+          </For>
+        </select>
       </label>
       <Show when={minApiVersion(apiVersion(), "1.1")}>
         <label class={formStyles.multiline}>

@@ -1,5 +1,3 @@
-import { SettingsStoreProvider } from "../stores/SettingsStore";
-
 export interface QueuedSearch {
   query: string;
   token: number;
@@ -75,6 +73,7 @@ export interface SearchItem {
 export async function getSearchResults(
   endpoint: string,
   { token, limit, offset }: GetSearchResultsArgs,
+  signal?: AbortSignal,
 ): Promise<SearchResults> {
   const requestUrl = new URL("search/results", endpoint);
 
@@ -93,6 +92,7 @@ export async function getSearchResults(
       headers: {
         "Content-Type": "application/json",
       },
+      signal,
     });
 
     const json: SearchResults = await response.json();
@@ -104,7 +104,7 @@ export async function getSearchResults(
         offset: 0,
         items: finalSearchResults.items.concat(json.items),
         count: finalSearchResults.count + json.count,
-      }
+      };
     }
 
     // if this page has less items than the limit, then there won't be any more pages

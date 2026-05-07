@@ -1,14 +1,13 @@
 import {
   createOptimistic,
   For,
-  isPending,
   Loading,
   Show,
   useContext,
   type Component,
 } from "solid-js";
 
-import { getSearchHistory, HistoricalSearch } from "../api/search";
+import { getSearchHistory, HistoricalSearch } from "../services/api/search";
 import { SearchStoreContext } from "../stores/SearchStore";
 import { SettingsStoreContext } from "../stores/SettingsStore";
 import { Dialog } from "./Dialog";
@@ -19,6 +18,17 @@ import styles from "./SearchBar.module.css";
 export const SearchBar: Component = () => {
   const { searchQuery, searchResults, enqueueSearch, isStreamingResults } =
     useContext(SearchStoreContext);
+  const { store: settings } = useContext(SettingsStoreContext);
+
+  const [searchHistory, _setOptimisticSearchHistory] = createOptimistic<
+    HistoricalSearch[]
+  >((prev = []) => {
+    if (!settings.apiEndpoint) {
+      return prev;
+    }
+
+    return getSearchHistory(settings.apiEndpoint);
+  });
 
   const onSearch = (evt: SubmitEvent) => {
     evt.preventDefault();
@@ -64,8 +74,16 @@ export const SearchBar: Component = () => {
         >
           <span>Filters</span>
           <Loading>
-            <Show when={searchResults()?.postfilterCount !== searchResults()?.prefilterCount}>
-              <strong class={styles.filterCount}>&nbsp;({searchResults()?.postfilterCount}/{searchResults()?.prefilterCount})</strong>
+            <Show
+              when={
+                searchResults()?.postfilterCount !==
+                searchResults()?.prefilterCount
+              }
+            >
+              <strong class={styles.filterCount}>
+                &nbsp;({searchResults()?.postfilterCount}/
+                {searchResults()?.prefilterCount})
+              </strong>
             </Show>
           </Loading>
         </button>
@@ -74,6 +92,7 @@ export const SearchBar: Component = () => {
       <Dialog id="history-dialog">
         <Loading fallback={<pre>Loading...</pre>}>
           <SearchHistory
+            searchHistory={searchHistory()}
             onHistory={() => {
               (
                 document.getElementById(
@@ -90,19 +109,11 @@ export const SearchBar: Component = () => {
   );
 };
 
-export const SearchHistory: Component<{ onHistory?: () => void }> = (props) => {
-  const { store: settings } = useContext(SettingsStoreContext);
+export const SearchHistory: Component<{
+  searchHistory: HistoricalSearch[];
+  onHistory?: () => void;
+}> = (props) => {
   const { restoreExistingSearch } = useContext(SearchStoreContext);
-
-  const [searchHistory, _setOptimisticSearchHistory] = createOptimistic<
-    HistoricalSearch[]
-  >((prev = []) => {
-    if (!settings.apiEndpoint) {
-      return prev;
-    }
-
-    return getSearchHistory(settings.apiEndpoint);
-  });
 
   const onClick = (search: HistoricalSearch) => {
     restoreExistingSearch(search.query, search.token);
@@ -111,11 +122,11 @@ export const SearchHistory: Component<{ onHistory?: () => void }> = (props) => {
 
   return (
     <ul class={styles.searchHistory}>
-      <For each={searchHistory()}>
+      <For each={props.searchHistory}>
         {(search) => (
           <li class={styles.searchHistoryLine}>
             <a href="#" onClick={() => onClick(search())}>
-              {search().query} <em>{search().result_count} finds</em>
+              {search().query} <em>{search().result_count} files</em>
             </a>
           </li>
         )}
