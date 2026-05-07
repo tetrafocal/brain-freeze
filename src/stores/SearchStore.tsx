@@ -105,7 +105,7 @@ export const SearchStoreProvider: ParentComponent = (props) => {
 
   const enqueueSearch = async function (query: string) {
     setSearchQuery(query);
-    if (!settings.apiEndpoint) return;
+    if (!settings.apiEndpoint || !settings.validApiEndpoint) return;
 
     const postResults = await postSearch(settings.apiEndpoint, query);
     setActiveToken(postResults.token);

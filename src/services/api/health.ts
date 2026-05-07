@@ -2,14 +2,16 @@ export async function getApiVersion(endpoint: string): Promise<string> {
   try {
     const url = new URL("/health", endpoint);
     return await fetch(url, {
+      signal: AbortSignal.timeout(500),
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     })
-    .then((response) => {console.log(response); return response.json()})
+    .then((response) => {return response.json()})
     .then((data) => { return data.version ? data.version : "1.0"; });
   } catch (e) {
+    console.log(e)
     return "-1";
   }
 };

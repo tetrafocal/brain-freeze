@@ -18,6 +18,7 @@ export type SettingsStore = {
   apiEndpoint: string;
   downloadFolder: string;
   theme: keyof typeof themeMap;
+  validApiEndpoint: boolean;
 };
 
 export type SettingsStoreContextType = StoreObject<SettingsStore> & {};
@@ -31,6 +32,7 @@ export const SettingsStoreProvider: ParentComponent = (props) => {
       apiEndpoint: "",
       downloadFolder: "",
       theme: "rosePine",
+      validApiEndpoint: false,
     },
   );
 

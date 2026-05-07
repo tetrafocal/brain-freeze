@@ -9,7 +9,6 @@ import {
 } from "solid-js";
 
 import { SettingsStoreContext } from "../stores/SettingsStore";
-import { SettingsDialog } from "./SettingsDialog";
 
 import styles from "./Tab.module.css";
 
@@ -56,10 +55,6 @@ export const TabBar: Component = () => {
       <Tab id="downloads" route="/downloads" name="Downloads" />
       <Tab id="uploads" route="/uploads" name="Uploads" />
       <Tab id="settings" route="/settings" name="Settings" />
-      <SettingsDialog
-        id="settings-dialog"
-        onClose={() => setActiveTab("search")}
-      />
     </div>
   );
 };

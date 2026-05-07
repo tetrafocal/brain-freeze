@@ -1,9 +1,3 @@
-.settingsDialogContent {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
 .endpointField {
   position: relative;
 }
@@ -12,7 +6,7 @@
   padding-right: 2rem;
 }
 
-.endpointValidIcon {
+.endpointIcon {
   position: absolute;
   top: 50%;
   right: 0.625rem;
@@ -21,12 +15,11 @@
   justify-content: center;
   width: 1.125rem;
   height: 1.125rem;
-  color: #2f9e44;
   transform: translateY(-50%);
   pointer-events: none;
 }
 
-.endpointValidIcon svg {
+.endpointIcon svg {
   width: 100%;
   height: 100%;
   fill: none;
