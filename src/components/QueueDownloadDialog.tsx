@@ -22,24 +22,20 @@ export const QueueDownloadDialog: Component<QueueDownloadDialogProps> = (
   const { store: settings } = useContext(SettingsStoreContext);
 
   const downloadFolder = async (username: string, files: UserFile[]) => {
-    // TODO convert to an action
-    // optimistically update DownloadStore when it exists
-    const results = await Promise.all(
-      files.map((file) =>
-        enqueueDownload(settings.apiEndpoint, {
-          username,
-          virtual_path: file.fullPath,
-          folder_path: settings.downloadFolder
-            ? `${settings.downloadFolder}/${getParentFolder(file.fullPath)}`
-            : undefined,
-          bypass_filter: false,
-          size: file.sizeInBytes,
-          file_attributes: file.attributes,
-        }),
-      ),
-    );
+    if (!settings.isApiEndpointHealthy) return;
 
-    return results;
+    for (const file of files) {
+      await enqueueDownload(settings.apiEndpoint, {
+        username,
+        virtual_path: file.fullPath,
+        folder_path: settings.downloadFolder
+          ? `${settings.downloadFolder}/${getParentFolder(file.fullPath)}`
+          : undefined,
+        bypass_filter: false,
+        size: file.sizeInBytes,
+        file_attributes: file.attributes,
+      });
+    }
   };
 
   const onDownload = async () => {
