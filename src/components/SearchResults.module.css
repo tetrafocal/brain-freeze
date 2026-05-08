@@ -43,11 +43,6 @@
   }
 }
 
-.folderPath::before {
-  content: "📁 ";
-  font-size: 0.8rem;
-}
-
 .folderName {
   color: var(--text-primary);
   font-weight: 600;
@@ -65,24 +60,12 @@
   color: var(--tertiary);
 }
 
-.private::before {
-  content: "🔒";
-}
-
 .queue {
   color: var(--secondary);
 }
 
-.queue::before {
-  content: "⌛";
-}
-
 .speed {
   color: var(--text-secondary);
-}
-
-.speed::before {
-  content: "↓";
 }
 
 .track {
@@ -105,4 +88,9 @@
 .trackDetails {
   color: var(--text-secondary);
   text-align: right;
+}
+
+.prefixIcon {
+  margin-right: 4px;
+  opacity: 0.8;
 }

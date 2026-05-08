@@ -12,6 +12,11 @@ import {
 
 import { UserFile, UserResponse } from "../services/collateAllSearchResults";
 import { SearchStoreContext } from "../stores/SearchStore";
+import { Icon } from "./icons/Icon";
+import ArrowDown from "./icons/lucide_arrow_down.svg";
+import Clock from "./icons/lucide_clock.svg";
+import Folder from "./icons/lucide_folder.svg";
+import Lock from "./icons/lucide_lock.svg";
 import {
   QueueDownloadDialog,
   QueueDownloadDialogProps,
@@ -119,19 +124,28 @@ const UserFolder: Component<{
       <header class={styles.folderHeader}>
         <div class={styles.folderHeaderInner}>
           <div class={styles.folderPath}>
-            /{props.response.username}/
+            <Icon icon={Folder} class={styles.prefixIcon} />/
+            {props.response.username}/
             <strong class={styles.folderName}>{props.folderName}</strong>/
           </div>
           <div class={styles.folderDetails}>
             <Show when={props.response.isPrivate}>
-              <span class={styles.private}>private</span>
+              <span class={styles.private}>
+                <Icon icon={Lock} class={styles.prefixIcon} />
+                private
+              </span>
             </Show>
             <Show when={props.response.queuePosition > 0}>
               <span class={styles.queue}>
+                <Icon icon={Clock} class={styles.prefixIcon} />
                 {props.response.queuePosition} in line
               </span>
             </Show>
-            <span class={styles.speed}>{speed()} MiB/s</span>
+
+            <span class={styles.speed}>
+              <Icon icon={ArrowDown} class={styles.prefixIcon} />
+              {speed()} MiB/s
+            </span>
           </div>
         </div>
       </header>

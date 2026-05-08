@@ -23,6 +23,13 @@ import { SettingsStoreContext } from "../stores/SettingsStore";
 import { supportsSortTransfers } from "../utils/apiVersionUtil";
 import { getFolderAndFileName } from "../utils/getFolderAndFileName";
 import { transferPollScheduler } from "../utils/transferPollScheduler";
+import { Icon, IconProps } from "./icons/Icon";
+import Check from "./icons/lucide_check.svg";
+import Clock from "./icons/lucide_clock.svg";
+import Folder from "./icons/lucide_folder.svg";
+import Pause from "./icons/lucide_pause.svg";
+import Play from "./icons/lucide_play.svg";
+import Triangle from "./icons/lucide_triangle_alert.svg";
 
 import styles from "./DownloadPage.module.css";
 import pageStyles from "./Page.module.css";
@@ -90,7 +97,8 @@ const DownloadGroupItem: Component<{ group: DownloadGroup }> = (props) => {
     <article class={styles.group}>
       <header>
         <h2>
-          /{props.group.username}/<strong>{sourceParentFolder}</strong>/
+          <Icon icon={Folder} class={styles.prefixIcon} />/
+          {props.group.username}/<strong>{sourceParentFolder}</strong>/
         </h2>
       </header>
       <ul>
@@ -102,11 +110,14 @@ const DownloadGroupItem: Component<{ group: DownloadGroup }> = (props) => {
   );
 };
 
-const statusIconMap: Record<DownloadItem["downloadStatus"], string> = {
-  Finished: "✔",
-  Paused: "⏸",
-  Queued: "∞",
-  Transferring: "▶",
+const statusIconMap: Record<
+  DownloadItem["downloadStatus"],
+  Component<IconProps>
+> = {
+  Finished: Check,
+  Paused: Pause,
+  Queued: Clock,
+  Transferring: Play,
 };
 
 const Download: Component<{ item: DownloadItem }> = (props) => {
@@ -118,9 +129,10 @@ const Download: Component<{ item: DownloadItem }> = (props) => {
   return (
     <li class={styles.download}>
       <div class={styles.trackName} title={props.item.filename}>
-        <span class={styles.statusIcon}>
-          {statusIconMap[props.item.downloadStatus] || "✖"}
-        </span>
+        <Icon
+          icon={statusIconMap[props.item.downloadStatus] || Triangle}
+          class={styles.statusIcon}
+        />
         {props.item.filename}
       </div>
       <Show when={props.item.downloadStatus !== "Finished"}>
