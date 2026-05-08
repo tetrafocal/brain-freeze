@@ -5,7 +5,8 @@ export function minApiVersion(version: string, minVersion: string): boolean {
   const [minMajor, minMinor, minPatch] = parseVersion(minVersion);
   if (major < minMajor) return false;
   if (major === minMajor && minor < minMinor) return false;
-  if (major === minMajor && minor === minMinor && patch < minPatch) return false;
+  if (major === minMajor && minor === minMinor && patch < minPatch)
+    return false;
   return true;
 }
 
@@ -15,4 +16,8 @@ export function isApiEndpointHealthy(version: string): boolean {
 
 export function supportsRescan(version: string): boolean {
   return minApiVersion(version, "1.1");
+}
+
+export function supportsSortTransfers(version: string): boolean {
+  return minApiVersion(version, "1.2");
 }

@@ -5,6 +5,7 @@ import {
   For,
   Loading,
   Match,
+  onSettled,
   refresh,
   Show,
   Switch,
@@ -19,7 +20,9 @@ import {
   DownloadResult,
 } from "../services/collateDownloadResults";
 import { SettingsStoreContext } from "../stores/SettingsStore";
+import { supportsSortTransfers } from "../utils/apiVersionUtil";
 import { getFolderAndFileName } from "../utils/getFolderAndFileName";
+import { transferPollScheduler } from "../utils/transferPollScheduler";
 
 import styles from "./DownloadPage.module.css";
 import pageStyles from "./Page.module.css";
@@ -30,21 +33,35 @@ export const DownloadPage: Component = () => {
     async (prev = undefined) => {
       if (!settings.isApiEndpointHealthy) return prev;
 
-      const rawDownloads = await getDownloads(settings.apiEndpoint, false);
+      const rawDownloads = await getDownloads(
+        settings.apiEndpoint,
+        false,
+        supportsSortTransfers(settings.apiVersion) ? false : undefined,
+      );
+
       return collateDownloadResults(rawDownloads);
     },
   );
 
+  const pollScheduler = transferPollScheduler(5 * 1000);
+  onSettled(() => {
+    return () => pollScheduler.dispose();
+  });
+
   createEffect(
     () => [downloads()?.hasActiveDownloads, downloads()?.hasQueuedDownloads],
     ([hasActiveDownloads, hasQueuedDownloads]) => {
-      let refreshTimer = 60 * 1000;
-      if (hasQueuedDownloads) refreshTimer = 10 * 1000;
-      if (hasActiveDownloads) refreshTimer = 1.5 * 1000;
+      if (hasActiveDownloads) {
+        pollScheduler.setDelay(1.5 * 1000);
+      } else if (hasQueuedDownloads) {
+        pollScheduler.setDelay(10 * 1000);
+      } else {
+        pollScheduler.setDelay(60 * 1000);
+      }
 
       const timer = setTimeout(() => {
         refresh(downloads);
-      }, refreshTimer);
+      }, pollScheduler.getDelay());
 
       return () => clearTimeout(timer);
     },

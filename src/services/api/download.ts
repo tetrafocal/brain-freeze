@@ -72,9 +72,15 @@ export type Download = Required<
 export async function getDownloads(
   endpoint: string,
   activeOnly: boolean = false,
+  sortTransfers?: boolean,
 ): Promise<Downloads> {
   const url = new URL("/downloads", endpoint);
-  const params = new URLSearchParams({ active_only: String(activeOnly) });
+  const params = new URLSearchParams({
+    active_only: String(activeOnly),
+    ...(sortTransfers !== undefined
+      ? { sort_transfers: String(sortTransfers) }
+      : {}),
+  });
   url.search = params.toString();
 
   const response = await fetch(url, {

@@ -76,8 +76,8 @@ export function collateDownloadResults(downloads: Downloads): DownloadResult {
   const [active, completed] = downloadGroups.values().reduce(
     (acc, download) => {
       if (download.items.every((item) => item.downloadStatus === "Finished"))
-        acc[1].push(download);
-      else acc[0].push(download);
+        acc[1].unshift(download);
+      else acc[0].unshift(download);
       return acc;
     },
     [[] as DownloadGroup[], [] as DownloadGroup[]],
