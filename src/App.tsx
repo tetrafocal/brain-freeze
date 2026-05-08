@@ -1,14 +1,15 @@
+import { HashRouter, Route } from "@solidjs/router";
 import { Loading, ParentComponent, type Component } from "solid-js";
 
+import { DownloadPage } from "./components/DownloadPage";
 import { SearchBar } from "./components/SearchBar";
 import { SearchResults } from "./components/SearchResults";
+import { SettingsPage } from "./components/SettingsPage";
 import { TabBar } from "./components/Tab";
+import { UploadPage } from "./components/UploadPage";
 import { FilterStoreProvider } from "./stores/FilterStore";
 import { SearchStoreProvider } from "./stores/SearchStore";
 import { SettingsStoreProvider } from "./stores/SettingsStore";
-import { HashRouter, Route } from "@solidjs/router";
-import { SettingsPage } from "./components/SettingsPage";
-import { DownloadPage } from "./components/DownloadPage";
 
 const Snapp: Component = () => {
   return (
@@ -31,8 +32,8 @@ const Base: ParentComponent = (props) => {
         </SearchStoreProvider>
       </FilterStoreProvider>
     </SettingsStoreProvider>
-  )
-}
+  );
+};
 
 const Search: Component = () => {
   return (
@@ -42,27 +43,19 @@ const Search: Component = () => {
         <SearchResults />
       </Loading>
     </>
-  )
-}
+  );
+};
 
 const Downloads: Component = () => {
-  return (
-    <DownloadPage />
-  )
-}
+  return <DownloadPage />;
+};
 
 const Uploads: Component = () => {
-  return (
-    <div>
-      <h1>Uploads</h1>
-    </div>
-  )
-}
+  return <UploadPage />;
+};
 
 const Settings: Component = () => {
-  return (
-    <SettingsPage />
-  )
-}
+  return <SettingsPage />;
+};
 
 export default Snapp;

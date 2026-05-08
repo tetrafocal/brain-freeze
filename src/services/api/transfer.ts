@@ -50,13 +50,13 @@ export async function enqueueDownload(
   return data as EnqueuedDownload;
 }
 
-export type Downloads = {
+export type Transfers = {
   active_only: boolean;
   count: number;
-  items: Download[];
+  items: Transfer[];
 };
 
-export type Download = Required<
+export type Transfer = Required<
   Pick<EnqueuedDownload, "username" | "virtual_path" | "folder_path" | "size">
 > & {
   current_byte_offset: number;
@@ -69,12 +69,13 @@ export type Download = Required<
   progress_pct: number | null;
 };
 
-export async function getDownloads(
+export async function getTransfers(
   endpoint: string,
+  direction: "downloads" | "uploads" = "downloads",
   activeOnly: boolean = false,
   sortTransfers?: boolean,
-): Promise<Downloads> {
-  const url = new URL("/downloads", endpoint);
+): Promise<Transfers> {
+  const url = new URL(`/${direction}`, endpoint);
   const params = new URLSearchParams({
     active_only: String(activeOnly),
     ...(sortTransfers !== undefined
@@ -91,9 +92,9 @@ export async function getDownloads(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get downloads: ${response.statusText}`);
+    throw new Error(`Failed to get ${direction}: ${response.statusText}`);
   }
 
   const data = await response.json();
-  return data as Downloads;
+  return data as Transfers;
 }
