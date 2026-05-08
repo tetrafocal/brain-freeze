@@ -16,11 +16,6 @@
   padding: 0;
 }
 
-.group h2::before {
-  content: "📁 ";
-  font-size: 0.8rem;
-}
-
 .group h2 strong {
   color: var(--text-primary);
   font-weight: 600;
@@ -48,15 +43,15 @@
   padding-right: 24px;
 }
 
+.prefixIcon {
+  margin-right: 4px;
+  opacity: 0.8;
+}
+
 .statusIcon {
-  font-size: 0.8em;
   margin-right: 8px;
-
-  display: inline-block;
-  transform: translateY(-2px);
-
-  width: 0.75em;
-  text-align: left;
+  transform: translateY(-0px);
+  opacity: 0.8;
 }
 
 .details {
