@@ -1,14 +1,9 @@
-import { 
-  Component, 
-  For, 
-  Match, 
-  Show, 
-  Switch, 
-  useContext 
-} from "solid-js";
-import { supportsRescan } from "../utils/apiVersionUtil";
+import { Component, For, Match, Show, Switch, useContext } from "solid-js";
+
 import { rescan } from "../services/api/rescan";
 import { SettingsStoreContext, themeMap } from "../stores/SettingsStore";
+import { supportsRescan } from "../utils/apiVersionUtil";
+
 import formStyles from "./Form.module.css";
 import pageStyles from "./Page.module.css";
 import styles from "./SettingsPage.module.css";
@@ -38,7 +33,8 @@ export const SettingsPage: Component = () => {
                 class={styles.endpointIcon}
                 style={{ color: "#2f9e44" }}
                 aria-label="API endpoint is valid"
-                title="API endpoint is valid">
+                title="API endpoint is valid"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
@@ -49,7 +45,8 @@ export const SettingsPage: Component = () => {
                 class={styles.endpointIcon}
                 style={{ color: "#e03131" }}
                 aria-label="API endpoint is invalid"
-                title="API endpoint is invalid">
+                title="API endpoint is invalid"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
@@ -80,7 +77,7 @@ export const SettingsPage: Component = () => {
         <span>Theme</span>
         <select
           name="theme"
-          value={store.theme}
+          value={store.theme || "modus"}
           onChange={(e) =>
             setStore((settings) => {
               settings.theme = e.target.value as keyof typeof themeMap;
@@ -92,11 +89,21 @@ export const SettingsPage: Component = () => {
           </For>
         </select>
       </label>
-      <Show when={store.isApiEndpointHealthy && supportsRescan(store.apiVersion)}>
+      <Show
+        when={store.isApiEndpointHealthy && supportsRescan(store.apiVersion)}
+      >
         <label class={formStyles.multiline}>
           <span>Rescan Files</span>
-          <span class={formStyles.subtitle}> Triggers a rescan on the client.</span>
-          <button class={styles.button} onClick={() => { if (store.isApiEndpointHealthy) rescan(store.apiEndpoint) }}>
+          <span class={formStyles.subtitle}>
+            {" "}
+            Triggers a rescan on the client.
+          </span>
+          <button
+            class={styles.button}
+            onClick={() => {
+              if (store.isApiEndpointHealthy) rescan(store.apiEndpoint);
+            }}
+          >
             Rescan
           </button>
         </label>

@@ -4,6 +4,9 @@
   left: 0px;
   bottom: 0px;
   padding: 12px;
+
+  padding-left: calc(12px + env(safe-area-inset-left, 0px));
+  padding-right: calc(12px + env(safe-area-inset-right, 0px));
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 
   display: flex;
