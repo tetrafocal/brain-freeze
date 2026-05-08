@@ -54,6 +54,11 @@
   opacity: 0.8;
 }
 
+.directionIcon {
+  margin: 0 4px;
+  opacity: 0.8;
+}
+
 .details {
   font-size: 1em;
   color: var(--text-secondary);

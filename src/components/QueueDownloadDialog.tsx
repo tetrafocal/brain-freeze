@@ -1,6 +1,6 @@
 import { Component, useContext } from "solid-js";
 
-import { enqueueDownload } from "../services/api/download";
+import { enqueueDownload } from "../services/api/transfer";
 import { UserFile, UserResponse } from "../services/collateAllSearchResults";
 import { SettingsStoreContext } from "../stores/SettingsStore";
 import { Dialog } from "./Dialog";

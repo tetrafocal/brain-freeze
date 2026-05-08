@@ -24,6 +24,7 @@ import { supportsSortTransfers } from "../utils/apiVersionUtil";
 import { getFolderAndFileName } from "../utils/getFolderAndFileName";
 import { transferPollScheduler } from "../utils/transferPollScheduler";
 import { Icon, IconProps } from "./icons/Icon";
+import ArrowRight from "./icons/lucide_arrow_right.svg";
 import Check from "./icons/lucide_check.svg";
 import Clock from "./icons/lucide_clock.svg";
 import Folder from "./icons/lucide_folder.svg";
@@ -34,20 +35,20 @@ import Triangle from "./icons/lucide_triangle_alert.svg";
 import pageStyles from "./Page.module.css";
 import transferStyles from "./Transfer.module.css";
 
-export const DownloadPage: Component = () => {
+export const UploadPage: Component = () => {
   const { store: settings } = useContext(SettingsStoreContext);
-  const downloads = createMemo<TransferResult | undefined>(
+  const uploads = createMemo<TransferResult | undefined>(
     async (prev = undefined) => {
       if (!settings.isApiEndpointHealthy) return prev;
 
-      const rawDownloads = await getTransfers(
+      const rawUploads = await getTransfers(
         settings.apiEndpoint,
-        "downloads",
+        "uploads",
         false,
         supportsSortTransfers(settings.apiVersion) ? false : undefined,
       );
 
-      return collateTransferResults(rawDownloads);
+      return collateTransferResults(rawUploads, { sectionByStatus: false });
     },
   );
 
@@ -57,18 +58,18 @@ export const DownloadPage: Component = () => {
   });
 
   createEffect(
-    () => [downloads()?.hasActive, downloads()?.hasQueued],
-    ([hasActiveDownloads, hasQueuedDownloads]) => {
-      if (hasActiveDownloads) {
+    () => [uploads()?.hasActive, uploads()?.hasQueued],
+    ([hasActiveUploads, hasQueuedUploads]) => {
+      if (hasActiveUploads) {
         pollScheduler.setDelay(1.5 * 1000);
-      } else if (hasQueuedDownloads) {
+      } else if (hasQueuedUploads) {
         pollScheduler.setDelay(10 * 1000);
       } else {
         pollScheduler.setDelay(60 * 1000);
       }
 
       const timer = setTimeout(() => {
-        refresh(downloads);
+        refresh(uploads);
       }, pollScheduler.getDelay());
 
       return () => clearTimeout(timer);
@@ -77,12 +78,12 @@ export const DownloadPage: Component = () => {
 
   return (
     <main class={pageStyles.page}>
-      <h1>downloads</h1>
+      <h1>uploads</h1>
       <Loading>
-        <Show when={downloads()}>
-          {(downloads) => (
-            <For each={downloads().groups}>
-              {(item) => <DownloadGroupItem group={item()} />}
+        <Show when={uploads()}>
+          {(uploads) => (
+            <For each={uploads().groups}>
+              {(item) => <UploadGroupItem group={item()} />}
             </For>
           )}
         </Show>
@@ -91,7 +92,7 @@ export const DownloadPage: Component = () => {
   );
 };
 
-const DownloadGroupItem: Component<{ group: TransferGroup }> = (props) => {
+const UploadGroupItem: Component<{ group: TransferGroup }> = (props) => {
   const [, sourceParentFolder] = getFolderAndFileName(props.group.sourcePath);
 
   return (
@@ -99,13 +100,13 @@ const DownloadGroupItem: Component<{ group: TransferGroup }> = (props) => {
       <header>
         <h2>
           <Icon icon={Folder} class={transferStyles.prefixIcon} />/
-          {props.group.username}/<strong>{sourceParentFolder}</strong>/
+          <strong>{sourceParentFolder}</strong>/
+          <Icon icon={ArrowRight} class={transferStyles.directionIcon} />
+          <strong>{props.group.username}</strong>
         </h2>
       </header>
       <ul>
-        <For each={props.group.items}>
-          {(item) => <Download item={item()} />}
-        </For>
+        <For each={props.group.items}>{(item) => <Upload item={item()} />}</For>
       </ul>
     </article>
   );
@@ -121,7 +122,7 @@ const statusIconMap: Record<
   Transferring: Play,
 };
 
-const Download: Component<{ item: TransferItem }> = (props) => {
+const Upload: Component<{ item: TransferItem }> = (props) => {
   const isProbablyErrorStatus = () =>
     props.item.transferStatus.indexOf(" ") !== -1;
 
