@@ -44,3 +44,18 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+.button.primary {
+  background-color: var(--primary);
+  color: var(--primary-text);
+}
+
+.button.primary:hover {
+  background-color: var(--primary-lighter);
+}
+
+.button.primary:active {
+  background-color: var(--primary-dark);
+
+  font-weight: 600;
+}

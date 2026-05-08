@@ -3,7 +3,8 @@ import { Component, useContext } from "solid-js";
 import { enqueueDownload } from "../services/api/transfer";
 import { UserFile, UserResponse } from "../services/collateAllSearchResults";
 import { SettingsStoreContext } from "../stores/SettingsStore";
-import { Dialog } from "./Dialog";
+import { assignRef } from "../utils/assignRef";
+import { Dialog, DialogRef } from "./Dialog";
 
 import dialogStyles from "./Dialog.module.css";
 
@@ -12,6 +13,7 @@ export type QueueDownloadDialogProps = {
   response: UserResponse;
   folderName: string;
   files: UserFile[];
+  ref?: DialogRef;
 
   onClose?: () => void;
 };
@@ -20,6 +22,8 @@ export const QueueDownloadDialog: Component<QueueDownloadDialogProps> = (
   props,
 ) => {
   const { store: settings } = useContext(SettingsStoreContext);
+
+  let dialogRef!: DialogRef;
 
   const downloadFolder = async (username: string, files: UserFile[]) => {
     if (!settings.isApiEndpointHealthy) return;
@@ -40,25 +44,30 @@ export const QueueDownloadDialog: Component<QueueDownloadDialogProps> = (
 
   const onDownload = async () => {
     await downloadFolder(props.response.username, props.files);
-
-    const dialog = document.getElementById(
-      props.id,
-    ) as HTMLDialogElement | null;
-    if (dialog) dialog.close();
+    dialogRef.close();
   };
 
   return (
     <Dialog
       id={props.id}
+      ref={(dr) => {
+        dialogRef = dr;
+        assignRef(props.ref, dr);
+      }}
       onClose={props.onClose}
       additionalFooter={
         <>
-          <button class={dialogStyles.button} onClick={onDownload}>
+          <button
+            class={[dialogStyles.button, dialogStyles.primary]}
+            onClick={onDownload}
+          >
             Download
           </button>
         </>
       }
-    ></Dialog>
+    >
+      <pre>Someday...</pre>
+    </Dialog>
   );
 };
 

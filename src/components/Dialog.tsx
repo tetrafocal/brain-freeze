@@ -1,18 +1,35 @@
 import {
-  Element as SolidElement,
-  ParentComponent,
+  Component,
   createSignal,
+  Ref,
+  Show,
+  Element as SolidElement,
 } from "solid-js";
 
+import { assignRef } from "../utils/assignRef";
+
 import styles from "./Dialog.module.css";
-export const Dialog: ParentComponent<{
+
+export type DialogRef = {
+  open: () => void;
+  close: () => void;
+};
+
+export const Dialog: Component<{
   id: string;
-  onClose?: () => void;
+  children: SolidElement | ((close: () => void) => SolidElement);
 
   contentClass?: string;
   additionalFooter?: SolidElement;
+
+  ref?: Ref<DialogRef>;
+  onClose?: () => void;
 }> = (props) => {
+  let dialogRef: HTMLDialogElement;
+
+  // eslint-disable-next-line no-unassigned-vars
   let contentRef!: HTMLDivElement;
+
   const [atTop, setAtTop] = createSignal(true);
   const [atBottom, setAtBottom] = createSignal(true);
 
@@ -24,8 +41,27 @@ export const Dialog: ParentComponent<{
     setAtTop(target.scrollTop === 0);
   };
 
+  const onOpenSelf = () => {
+    dialogRef.showModal();
+  };
+
+  const onCloseSelf = () => {
+    dialogRef.close();
+  };
+
   return (
-    <dialog id={props.id} class={styles.dialog} onClose={props.onClose}>
+    <dialog
+      ref={(dialogEl) => {
+        dialogRef = dialogEl;
+        assignRef(props.ref, {
+          open: onOpenSelf,
+          close: onCloseSelf,
+        });
+      }}
+      id={props.id}
+      class={styles.dialog}
+      onClose={props.onClose}
+    >
       <div class={styles.body}>
         <div
           ref={contentRef}
@@ -38,10 +74,17 @@ export const Dialog: ParentComponent<{
             props.contentClass,
           ]}
         >
-          {props.children}
+          <Show
+            when={typeof props.children === "function"}
+            fallback={props.children as SolidElement}
+          >
+            {(props.children as (close: () => void) => SolidElement)(
+              onCloseSelf,
+            )}
+          </Show>
         </div>
         <footer class={styles.footer}>
-          <button class={styles.button} commandfor={props.id} command="close">
+          <button class={styles.button} onClick={onCloseSelf}>
             Close
           </button>
           {props.additionalFooter}
