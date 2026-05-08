@@ -39,23 +39,14 @@ export const TabBar: Component = () => {
     }
   });
 
-  // createEffect(
-  //   () => activeTab(),
-  //   (tab) => {
-  //     if (tab === "settings") {
-  //       const dialog = document.getElementById(
-  //         "settings-dialog",
-  //       ) as HTMLDialogElement;
-  //       dialog?.showModal();
-  //     }
-  //   },
-  // );
   return (
-    <Switch fallback={
-      <div class={styles.tabBar}>
-        <Tab id="settings" route="/settings" name="Settings" />
-      </div>
-    }>
+    <Switch
+      fallback={
+        <div class={styles.tabBar}>
+          <Tab id="settings" route="/settings" name="Settings" />
+        </div>
+      }
+    >
       <Match when={settings.isApiEndpointHealthy}>
         <div class={styles.tabBar}>
           <Tab id="search" route="/" name="Search" />

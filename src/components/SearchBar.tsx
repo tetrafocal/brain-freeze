@@ -2,6 +2,8 @@ import {
   createOptimistic,
   For,
   Loading,
+  onSettled,
+  refresh,
   Show,
   useContext,
   type Component,
@@ -10,6 +12,7 @@ import {
 import { getSearchHistory, HistoricalSearch } from "../services/api/search";
 import { SearchStoreContext } from "../stores/SearchStore";
 import { SettingsStoreContext } from "../stores/SettingsStore";
+import { onVisible } from "../utils/onVisible";
 import { Dialog } from "./Dialog";
 import { FilterDialog } from "./FilterDialog";
 
@@ -18,17 +21,6 @@ import styles from "./SearchBar.module.css";
 export const SearchBar: Component = () => {
   const { searchQuery, searchResults, enqueueSearch, isStreamingResults } =
     useContext(SearchStoreContext);
-  const { store: settings } = useContext(SettingsStoreContext);
-
-  const [searchHistory, _setOptimisticSearchHistory] = createOptimistic<
-    HistoricalSearch[]
-  >((prev = []) => {
-    if (!settings.isApiEndpointHealthy) {
-      return prev;
-    }
-
-    return getSearchHistory(settings.apiEndpoint);
-  });
 
   const onSearch = (evt: SubmitEvent) => {
     evt.preventDefault();
@@ -90,18 +82,11 @@ export const SearchBar: Component = () => {
       </div>
 
       <Dialog id="history-dialog">
-        <Loading fallback={<pre>Loading...</pre>}>
-          <SearchHistory
-            searchHistory={searchHistory()}
-            onHistory={() => {
-              (
-                document.getElementById(
-                  "history-dialog",
-                ) as HTMLDialogElement | null
-              )?.close();
-            }}
-          />
-        </Loading>
+        {(close) => (
+          <Loading fallback={<pre>Loading...</pre>}>
+            <SearchHistory onHistory={close} />
+          </Loading>
+        )}
       </Dialog>
 
       <FilterDialog id="filter-dialog" />
@@ -110,10 +95,33 @@ export const SearchBar: Component = () => {
 };
 
 export const SearchHistory: Component<{
-  searchHistory: HistoricalSearch[];
   onHistory?: () => void;
 }> = (props) => {
   const { restoreExistingSearch } = useContext(SearchStoreContext);
+  const { store: settings } = useContext(SettingsStoreContext);
+
+  const [searchHistory, _setOptimisticSearchHistory] = createOptimistic<
+    HistoricalSearch[]
+  >((prev = []) => {
+    if (!settings.isApiEndpointHealthy) {
+      return prev;
+    }
+
+    return getSearchHistory(settings.apiEndpoint);
+  });
+
+  // eslint-disable-next-line no-unassigned-vars
+  let historyListRef!: HTMLUListElement;
+  onSettled(() => {
+    return onVisible(historyListRef, () => {
+      try {
+        refresh(searchHistory);
+      } catch {
+        // in solid2 beta10, refresh throws the NotReadyError rather than swallowing it
+        // it's a no-op
+      }
+    });
+  });
 
   const onClick = (search: HistoricalSearch) => {
     restoreExistingSearch(search.query, search.token);
@@ -121,16 +129,18 @@ export const SearchHistory: Component<{
   };
 
   return (
-    <ul class={styles.searchHistory}>
-      <For each={props.searchHistory}>
-        {(search) => (
-          <li class={styles.searchHistoryLine}>
-            <a href="#" onClick={() => onClick(search())}>
-              {search().query} <em>{search().result_count} files</em>
-            </a>
-          </li>
-        )}
-      </For>
+    <ul class={styles.searchHistory} ref={historyListRef}>
+      <Loading>
+        <For each={searchHistory()}>
+          {(search) => (
+            <li class={styles.searchHistoryLine}>
+              <a href="#" onClick={() => onClick(search())}>
+                {search().query} <em>{search().result_count} files</em>
+              </a>
+            </li>
+          )}
+        </For>
+      </Loading>
     </ul>
   );
 };

@@ -12,6 +12,7 @@ import {
 
 import { UserFile, UserResponse } from "../services/collateAllSearchResults";
 import { SearchStoreContext } from "../stores/SearchStore";
+import { DialogRef } from "./Dialog";
 import { Icon } from "./icons/Icon";
 import ArrowDown from "./icons/lucide_arrow_down.svg";
 import Clock from "./icons/lucide_clock.svg";
@@ -39,14 +40,12 @@ export const SearchResults: Component = () => {
   ) => {
     setQueueDialogProps(props);
     onSettled(() => {
-      const dialog = document.getElementById(
-        props.id,
-      ) as HTMLDialogElement | null;
-      if (dialog) {
-        dialog.showModal();
-      }
+      queueDownloadDialogRef.open();
     });
   };
+
+  // eslint-disable-next-line no-unassigned-vars
+  let queueDownloadDialogRef!: DialogRef;
 
   return (
     <main class={styles.searchResults}>
@@ -66,6 +65,7 @@ export const SearchResults: Component = () => {
         {(props) => (
           <QueueDownloadDialog
             id={props().id}
+            ref={queueDownloadDialogRef}
             response={props().response}
             folderName={props().folderName}
             files={props().files}
