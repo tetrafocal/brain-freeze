@@ -95,7 +95,6 @@ export const SettingsPage: Component = () => {
         <label class={formStyles.multiline}>
           <span>Rescan Files</span>
           <span class={formStyles.subtitle}>
-            {" "}
             Triggers a rescan on the client.
           </span>
           <button
