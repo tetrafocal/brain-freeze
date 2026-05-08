@@ -7,13 +7,14 @@ import {
   snapshot,
   createMemo,
 } from "solid-js";
-import { StoreObject } from "../utils/types";
+
 import { getApiVersion } from "../services/api/health";
 import { isApiEndpointHealthy } from "../utils/apiVersionUtil";
+import { StoreObject } from "../utils/types";
 
 export const themeMap = {
-  rosePine: "Rose Pine",
   modus: "Modus",
+  rosePine: "Rose Pine",
 };
 
 export type SettingsStore = {
@@ -21,7 +22,7 @@ export type SettingsStore = {
   theme: keyof typeof themeMap;
 } & EndpointState;
 
-type EndpointState = 
+type EndpointState =
   | { apiEndpoint: string | undefined; isApiEndpointHealthy: false }
   | { apiEndpoint: string; apiVersion: string; isApiEndpointHealthy: true };
 
@@ -36,7 +37,7 @@ export const SettingsStoreProvider: ParentComponent = (props) => {
     JSON.parse(localStorage.getItem("settings") ?? "null") ?? {
       apiEndpoint: "",
       downloadFolder: "",
-      theme: "rosePine",
+      theme: "modus",
       isApiEndpointHealthy: false,
       apiVersion: "-1",
     },
@@ -44,13 +45,14 @@ export const SettingsStoreProvider: ParentComponent = (props) => {
 
   const apiVersion = createMemo(() => getApiVersion(store.apiEndpoint || ""));
   createEffect(
-    () => apiVersion(), 
-    (apiVersionValue) => setStore((settings) => {
-      settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersionValue);
-      if (settings.isApiEndpointHealthy) {
-        settings.apiVersion = apiVersionValue;
-      }
-    })
+    () => apiVersion(),
+    (apiVersionValue) =>
+      setStore((settings) => {
+        settings.isApiEndpointHealthy = isApiEndpointHealthy(apiVersionValue);
+        if (settings.isApiEndpointHealthy) {
+          settings.apiVersion = apiVersionValue;
+        }
+      }),
   );
 
   createEffect(
@@ -64,7 +66,8 @@ export const SettingsStoreProvider: ParentComponent = (props) => {
   createEffect(
     () => store.theme,
     (theme) => {
-      document.documentElement.className = theme === "rosePine" ? "rose-pine" : "modus";
+      document.documentElement.className =
+        theme === "rosePine" ? "rose-pine" : "modus";
     },
   );
 
