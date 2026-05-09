@@ -111,7 +111,7 @@ export function collateTransferResults(
 
   const finalGroups = (() => {
     if (!sectionByStatus) {
-      return Array.from(groups.values());
+      return Array.from(groups.values()).reverse();
     }
 
     const [active, completed] = groups.values().reduce(
