@@ -12,6 +12,8 @@ export type TransferResult = {
 };
 
 export type TransferGroup = {
+  key: string;
+
   username: string;
   /**
    * Downloads:
@@ -53,6 +55,16 @@ export type CollateOptions = {
   sectionByStatus?: boolean;
 };
 
+export const EmptyTransferResult: TransferResult = {
+  groups: [],
+  activeOnly: false,
+  fetchedAt: 0,
+  fileCount: 0,
+  groupCount: 0,
+  hasActive: false,
+  hasQueued: false,
+};
+
 export function collateTransferResults(
   transfers: Transfers,
   { sectionByStatus = true }: CollateOptions = {},
@@ -69,6 +81,7 @@ export function collateTransferResults(
 
     if (!groups.has(groupKey)) {
       groups.set(groupKey, {
+        key: groupKey,
         username: user,
         sourcePath,
         targetPath,

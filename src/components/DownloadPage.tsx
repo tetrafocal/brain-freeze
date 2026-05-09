@@ -15,6 +15,7 @@ import {
 import { getTransfers } from "../services/api/transfer";
 import {
   collateTransferResults,
+  EmptyTransferResult,
   TransferGroup,
   TransferItem,
   TransferResult,
@@ -38,7 +39,7 @@ import transferStyles from "./Transfer.module.css";
 export const DownloadPage: Component = () => {
   const { store: settings } = useContext(SettingsStoreContext);
 
-  const downloads = createMemo((prev: TransferResult | undefined) =>
+  const downloads = createMemo((prev: TransferResult = EmptyTransferResult) =>
     downloadStream(prev, settings.apiEndpoint, settings.apiVersion),
   );
 
@@ -72,8 +73,8 @@ export const DownloadPage: Component = () => {
       <Loading>
         <Show when={downloads()}>
           {(downloads) => (
-            <For each={downloads().groups}>
-              {(item) => <DownloadGroupItem group={item()} />}
+            <For each={downloads().groups} keyed={(group) => group.key}>
+              {(group) => <DownloadGroupItem group={group()} />}
             </For>
           )}
         </Show>
@@ -83,18 +84,19 @@ export const DownloadPage: Component = () => {
 };
 
 const DownloadGroupItem: Component<{ group: TransferGroup }> = (props) => {
-  const [, sourceParentFolder] = getFolderAndFileName(props.group.sourcePath);
+  const sourceParentFolder = () =>
+    getFolderAndFileName(props.group.sourcePath)[1];
 
   return (
     <article class={transferStyles.group}>
       <header>
         <h2>
           <Icon icon={Folder} class={transferStyles.prefixIcon} />/
-          {props.group.username}/<strong>{sourceParentFolder}</strong>/
+          {props.group.username}/<strong>{sourceParentFolder()}</strong>/
         </h2>
       </header>
       <ul>
-        <For each={props.group.items}>
+        <For each={props.group.items} keyed={(item) => item.filename}>
           {(item) => <Download item={item()} />}
         </For>
       </ul>
@@ -164,12 +166,15 @@ const Download: Component<{ item: TransferItem }> = (props) => {
 };
 
 async function* downloadStream(
-  prev: TransferResult | undefined,
+  prev: TransferResult,
   apiEndpoint: string | undefined,
   apiVersion: string | undefined,
 ) {
-  const [cached, setCached] = useLocalStorage<TransferResult>("downloads");
-  yield prev || cached();
+  const [cached, setCached] = useLocalStorage<TransferResult>(
+    "downloads",
+    EmptyTransferResult,
+  );
+  yield prev !== EmptyTransferResult ? prev : cached();
 
   if (!apiEndpoint || !apiVersion) {
     return;
