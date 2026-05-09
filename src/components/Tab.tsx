@@ -73,6 +73,7 @@ const Tab: Component<TabProps> = (props) => {
 
   const onClick = () => {
     setActiveTab(props.id);
+
     if (props.route) {
       navigate(props.route);
     }

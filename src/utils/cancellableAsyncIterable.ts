@@ -104,6 +104,11 @@ export function once<T>(value: T): AsyncIterable<T> {
   };
 }
 
+export function soon<T>(value: Promise<T>): AsyncIterable<T> {
+  // Solid runtime will automatically handle the promise resolution
+  return once(value) as AsyncIterable<T>;
+}
+
 export function cancellableDelay(
   ms: number,
   signal: AbortSignal,
