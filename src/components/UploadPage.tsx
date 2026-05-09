@@ -1,8 +1,9 @@
 import {
   Component,
   createEffect,
-  createMemo,
+  createProjection,
   For,
+  isRefreshing,
   Loading,
   Match,
   onSettled,
@@ -40,18 +41,34 @@ import transferStyles from "./Transfer.module.css";
 export const UploadPage: Component = () => {
   const { store: settings } = useContext(SettingsStoreContext);
 
-  const uploads = createMemo((prev: TransferResult = EmptyTransferResult) =>
-    uploadStream(prev, settings.apiEndpoint, settings.apiVersion),
+  const [cache, setCache] = useLocalStorage<TransferResult>(
+    "uploads",
+    EmptyTransferResult,
   );
+
+  const uploads = createProjection((prev) => {
+    if (!isRefreshing() || !settings.apiEndpoint || !settings.apiVersion) {
+      return prev;
+    }
+
+    // promise is done inline so above check doesn't cause suspension
+    return fetchUploads(settings.apiEndpoint, settings.apiVersion).then(
+      (uploads) => {
+        setCache(uploads);
+        return uploads;
+      },
+    );
+  }, cache());
 
   const pollScheduler = transferPollScheduler(5 * 1000);
   onSettled(() => {
+    queueMicrotask(() => refresh(uploads));
     return () => pollScheduler.dispose();
   });
 
   createEffect(
-    () => [uploads()?.hasActive, uploads()?.hasQueued],
-    ([hasActiveUploads, hasQueuedUploads]) => {
+    () => [uploads.fetchedAt, uploads.hasActive, uploads.hasQueued],
+    ([_fetchedAt, hasActiveUploads, hasQueuedUploads]) => {
       if (hasActiveUploads) {
         pollScheduler.setDelay(1.5 * 1000);
       } else if (hasQueuedUploads) {
@@ -60,19 +77,24 @@ export const UploadPage: Component = () => {
         pollScheduler.setDelay(60 * 1000);
       }
 
-      const timer = setTimeout(() => {
+      let disposed = false;
+      const timer = setInterval(() => {
+        if (disposed) return;
         refresh(uploads);
       }, pollScheduler.getDelay());
 
-      return () => clearTimeout(timer);
+      return () => {
+        disposed = true;
+        clearInterval(timer);
+      };
     },
   );
 
   return (
     <main class={pageStyles.page}>
       <h1>uploads</h1>
-      <Loading>
-        <For each={uploads().groups} keyed={(group) => group.key}>
+      <Loading fallback={<p>loading...</p>}>
+        <For each={uploads.groups}>
           {(group) => <UploadGroupItem group={group()} />}
         </For>
       </Loading>
@@ -95,9 +117,7 @@ const UploadGroupItem: Component<{ group: TransferGroup }> = (props) => {
         </h2>
       </header>
       <ul>
-        <For each={props.group.items} keyed={(item) => item.filename}>
-          {(item) => <Upload item={item()} />}
-        </For>
+        <For each={props.group.items}>{(item) => <Upload item={item()} />}</For>
       </ul>
     </article>
   );
@@ -164,21 +184,7 @@ const Upload: Component<{ item: TransferItem }> = (props) => {
   );
 };
 
-async function* uploadStream(
-  prev: TransferResult,
-  apiEndpoint: string | undefined,
-  apiVersion: string | undefined,
-) {
-  const [cached, setCached] = useLocalStorage<TransferResult>(
-    "uploads",
-    EmptyTransferResult,
-  );
-  yield prev !== EmptyTransferResult ? prev : cached();
-
-  if (!apiEndpoint || !apiVersion) {
-    return;
-  }
-
+async function fetchUploads(apiEndpoint: string, apiVersion: string) {
   const rawUploads = await getTransfers(
     apiEndpoint,
     "uploads",
@@ -186,7 +192,5 @@ async function* uploadStream(
     supportsSortTransfers(apiVersion) ? false : undefined,
   );
 
-  const collated = collateTransferResults(rawUploads);
-  yield collated;
-  setCached(collated);
+  return collateTransferResults(rawUploads);
 }

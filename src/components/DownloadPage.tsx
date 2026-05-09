@@ -1,8 +1,9 @@
 import {
   Component,
   createEffect,
-  createMemo,
+  createProjection,
   For,
+  isRefreshing,
   Loading,
   Match,
   onSettled,
@@ -39,18 +40,35 @@ import transferStyles from "./Transfer.module.css";
 export const DownloadPage: Component = () => {
   const { store: settings } = useContext(SettingsStoreContext);
 
-  const downloads = createMemo((prev: TransferResult = EmptyTransferResult) =>
-    downloadStream(prev, settings.apiEndpoint, settings.apiVersion),
+  const [cache, setCache] = useLocalStorage<TransferResult>(
+    "downloads",
+    EmptyTransferResult,
   );
+
+  const downloads = createProjection((prev) => {
+    if (!isRefreshing() || !settings.apiEndpoint || !settings.apiVersion) {
+      return prev;
+    }
+
+    return fetchDownloads(settings.apiEndpoint, settings.apiVersion).then(
+      (downloads) => {
+        setCache(downloads);
+        return downloads;
+      },
+    );
+  }, cache());
 
   const pollScheduler = transferPollScheduler(5 * 1000);
   onSettled(() => {
+    // Solid 2.0 bug? refresh() called directly here triggers an unbounded-async-read warning
+    // delaying it to the next microtask lets the existing boundaries take effect and prevent the issue
+    queueMicrotask(() => refresh(downloads));
     return () => pollScheduler.dispose();
   });
 
   createEffect(
-    () => [downloads()?.hasActive, downloads()?.hasQueued],
-    ([hasActiveDownloads, hasQueuedDownloads]) => {
+    () => [downloads.fetchedAt, downloads.hasActive, downloads.hasQueued],
+    ([_fetchedAt, hasActiveDownloads, hasQueuedDownloads]) => {
       if (hasActiveDownloads) {
         pollScheduler.setDelay(1.5 * 1000);
       } else if (hasQueuedDownloads) {
@@ -59,11 +77,16 @@ export const DownloadPage: Component = () => {
         pollScheduler.setDelay(60 * 1000);
       }
 
-      const timer = setTimeout(() => {
+      let disposed = false;
+      const timer = setInterval(() => {
+        if (disposed) return;
         refresh(downloads);
       }, pollScheduler.getDelay());
 
-      return () => clearTimeout(timer);
+      return () => {
+        disposed = true;
+        clearInterval(timer);
+      };
     },
   );
 
@@ -71,13 +94,9 @@ export const DownloadPage: Component = () => {
     <main class={pageStyles.page}>
       <h1>downloads</h1>
       <Loading>
-        <Show when={downloads()}>
-          {(downloads) => (
-            <For each={downloads().groups} keyed={(group) => group.key}>
-              {(group) => <DownloadGroupItem group={group()} />}
-            </For>
-          )}
-        </Show>
+        <For each={downloads.groups}>
+          {(group) => <DownloadGroupItem group={group()} />}
+        </For>
       </Loading>
     </main>
   );
@@ -96,7 +115,7 @@ const DownloadGroupItem: Component<{ group: TransferGroup }> = (props) => {
         </h2>
       </header>
       <ul>
-        <For each={props.group.items} keyed={(item) => item.filename}>
+        <For each={props.group.items}>
           {(item) => <Download item={item()} />}
         </For>
       </ul>
@@ -165,29 +184,15 @@ const Download: Component<{ item: TransferItem }> = (props) => {
   );
 };
 
-async function* downloadStream(
-  prev: TransferResult,
-  apiEndpoint: string | undefined,
-  apiVersion: string | undefined,
-) {
-  const [cached, setCached] = useLocalStorage<TransferResult>(
-    "downloads",
-    EmptyTransferResult,
-  );
-  yield prev !== EmptyTransferResult ? prev : cached();
-
-  if (!apiEndpoint || !apiVersion) {
-    return;
-  }
-
+async function fetchDownloads(
+  apiEndpoint: string,
+  apiVersion: string,
+): Promise<TransferResult> {
   const rawDownloads = await getTransfers(
     apiEndpoint,
     "downloads",
     false,
     supportsSortTransfers(apiVersion) ? false : undefined,
   );
-
-  const collated = collateTransferResults(rawDownloads);
-  yield collated;
-  setCached(collated);
+  return collateTransferResults(rawDownloads);
 }
