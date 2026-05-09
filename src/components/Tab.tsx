@@ -6,7 +6,6 @@ import {
   Switch,
   createEffect,
   createSignal,
-  onSettled,
   useContext,
 } from "solid-js";
 
@@ -33,11 +32,12 @@ export const TabBar: Component = () => {
     },
   );
 
-  onSettled(() => {
-    if (location.pathname && location.pathname !== "/") {
-      setActiveTab(location.pathname.replace("/", "") as Tabs);
-    }
-  });
+  createEffect(
+    () => location.pathname,
+    (pathname) => {
+      setActiveTab((pathname.replace("/", "") || "search") as Tabs);
+    },
+  );
 
   return (
     <Switch
@@ -73,7 +73,6 @@ const Tab: Component<TabProps> = (props) => {
 
   const onClick = () => {
     setActiveTab(props.id);
-
     if (props.route) {
       navigate(props.route);
     }

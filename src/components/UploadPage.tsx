@@ -15,6 +15,7 @@ import {
 import { getTransfers } from "../services/api/transfer";
 import {
   collateTransferResults,
+  EmptyTransferResult,
   TransferGroup,
   TransferItem,
   TransferResult,
@@ -39,7 +40,7 @@ import transferStyles from "./Transfer.module.css";
 export const UploadPage: Component = () => {
   const { store: settings } = useContext(SettingsStoreContext);
 
-  const uploads = createMemo((prev: TransferResult | undefined) =>
+  const uploads = createMemo((prev: TransferResult = EmptyTransferResult) =>
     uploadStream(prev, settings.apiEndpoint, settings.apiVersion),
   );
 
@@ -71,36 +72,32 @@ export const UploadPage: Component = () => {
     <main class={pageStyles.page}>
       <h1>uploads</h1>
       <Loading>
-        <Show when={uploads()}>
-          {(uploads) => (
-            <For each={uploads().groups}>
-              {(item) => <UploadGroupItem group={item()} />}
-            </For>
-          )}
-        </Show>
+        <For each={uploads().groups} keyed={(group) => group.key}>
+          {(group) => <UploadGroupItem group={group()} />}
+        </For>
       </Loading>
     </main>
   );
 };
 
 const UploadGroupItem: Component<{ group: TransferGroup }> = (props) => {
-  const [sourceGrandParentFolder, sourceParentFolder] = getFolderAndFileName(
-    props.group.sourcePath,
-  );
+  const folderParts = () => getFolderAndFileName(props.group.sourcePath);
 
   return (
     <article class={transferStyles.group}>
       <header>
         <h2>
           <Icon icon={Folder} class={transferStyles.prefixIcon} />/
-          {sourceGrandParentFolder}/<strong>{sourceParentFolder}</strong>
+          {folderParts()[0]}/<strong>{folderParts()[1]}</strong>
           /
           <Icon icon={ArrowRight} class={transferStyles.directionIcon} />
           <strong>{props.group.username}</strong>
         </h2>
       </header>
       <ul>
-        <For each={props.group.items}>{(item) => <Upload item={item()} />}</For>
+        <For each={props.group.items} keyed={(item) => item.filename}>
+          {(item) => <Upload item={item()} />}
+        </For>
       </ul>
     </article>
   );
@@ -168,12 +165,15 @@ const Upload: Component<{ item: TransferItem }> = (props) => {
 };
 
 async function* uploadStream(
-  prev: TransferResult | undefined,
+  prev: TransferResult,
   apiEndpoint: string | undefined,
   apiVersion: string | undefined,
 ) {
-  const [cached, setCached] = useLocalStorage<TransferResult>("uploads");
-  yield prev || cached();
+  const [cached, setCached] = useLocalStorage<TransferResult>(
+    "uploads",
+    EmptyTransferResult,
+  );
+  yield prev !== EmptyTransferResult ? prev : cached();
 
   if (!apiEndpoint || !apiVersion) {
     return;

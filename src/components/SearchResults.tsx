@@ -51,7 +51,10 @@ export const SearchResults: Component = () => {
     <main class={styles.searchResults}>
       <Errored fallback={(error) => <pre>{error()}</pre>}>
         <Loading>
-          <For each={searchResults()?.responses}>
+          <For
+            each={searchResults()?.responses}
+            keyed={(response) => response.username}
+          >
             {(response) => (
               <UserItems
                 response={response()}
@@ -85,7 +88,7 @@ const UserItems: Component<{
 
   return (
     <article class={styles.user}>
-      <For each={folders()}>
+      <For each={folders()} keyed={(entry) => entry[0]}>
         {(entry) => (
           <UserFolder
             response={props.response}
@@ -149,7 +152,9 @@ const UserFolder: Component<{
           </div>
         </div>
       </header>
-      <For each={props.files}>{(file) => <Track file={file()} />}</For>
+      <For each={props.files} keyed={(file) => file.fileName}>
+        {(file) => <Track file={file()} />}
+      </For>
     </div>
   );
 };
