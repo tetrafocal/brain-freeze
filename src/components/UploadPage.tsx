@@ -23,6 +23,7 @@ import { SettingsStoreContext } from "../stores/SettingsStore";
 import { supportsSortTransfers } from "../utils/apiVersionUtil";
 import { getFolderAndFileName } from "../utils/getFolderAndFileName";
 import { transferPollScheduler } from "../utils/transferPollScheduler";
+import { useLocalStorage } from "../utils/useStorage";
 import { Icon, IconProps } from "./icons/Icon";
 import ArrowRight from "./icons/lucide_arrow_right.svg";
 import Check from "./icons/lucide_check.svg";
@@ -37,19 +38,9 @@ import transferStyles from "./Transfer.module.css";
 
 export const UploadPage: Component = () => {
   const { store: settings } = useContext(SettingsStoreContext);
-  const uploads = createMemo<TransferResult | undefined>(
-    async (prev = undefined) => {
-      if (!settings.isApiEndpointHealthy) return prev;
 
-      const rawUploads = await getTransfers(
-        settings.apiEndpoint,
-        "uploads",
-        false,
-        supportsSortTransfers(settings.apiVersion) ? false : undefined,
-      );
-
-      return collateTransferResults(rawUploads, { sectionByStatus: false });
-    },
+  const uploads = createMemo((prev: TransferResult | undefined) =>
+    uploadStream(prev, settings.apiEndpoint, settings.apiVersion),
   );
 
   const pollScheduler = transferPollScheduler(5 * 1000);
@@ -93,14 +84,17 @@ export const UploadPage: Component = () => {
 };
 
 const UploadGroupItem: Component<{ group: TransferGroup }> = (props) => {
-  const [, sourceParentFolder] = getFolderAndFileName(props.group.sourcePath);
+  const [sourceGrandParentFolder, sourceParentFolder] = getFolderAndFileName(
+    props.group.sourcePath,
+  );
 
   return (
     <article class={transferStyles.group}>
       <header>
         <h2>
           <Icon icon={Folder} class={transferStyles.prefixIcon} />/
-          <strong>{sourceParentFolder}</strong>/
+          {sourceGrandParentFolder}/<strong>{sourceParentFolder}</strong>
+          /
           <Icon icon={ArrowRight} class={transferStyles.directionIcon} />
           <strong>{props.group.username}</strong>
         </h2>
@@ -172,3 +166,27 @@ const Upload: Component<{ item: TransferItem }> = (props) => {
     </li>
   );
 };
+
+async function* uploadStream(
+  prev: TransferResult | undefined,
+  apiEndpoint: string | undefined,
+  apiVersion: string | undefined,
+) {
+  const [cached, setCached] = useLocalStorage<TransferResult>("uploads");
+  yield prev || cached();
+
+  if (!apiEndpoint || !apiVersion) {
+    return;
+  }
+
+  const rawUploads = await getTransfers(
+    apiEndpoint,
+    "uploads",
+    false,
+    supportsSortTransfers(apiVersion) ? false : undefined,
+  );
+
+  const collated = collateTransferResults(rawUploads);
+  yield collated;
+  setCached(collated);
+}

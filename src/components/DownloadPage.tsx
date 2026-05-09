@@ -23,6 +23,7 @@ import { SettingsStoreContext } from "../stores/SettingsStore";
 import { supportsSortTransfers } from "../utils/apiVersionUtil";
 import { getFolderAndFileName } from "../utils/getFolderAndFileName";
 import { transferPollScheduler } from "../utils/transferPollScheduler";
+import { useLocalStorage } from "../utils/useStorage";
 import { Icon, IconProps } from "./icons/Icon";
 import Check from "./icons/lucide_check.svg";
 import Clock from "./icons/lucide_clock.svg";
@@ -36,19 +37,9 @@ import transferStyles from "./Transfer.module.css";
 
 export const DownloadPage: Component = () => {
   const { store: settings } = useContext(SettingsStoreContext);
-  const downloads = createMemo<TransferResult | undefined>(
-    async (prev = undefined) => {
-      if (!settings.isApiEndpointHealthy) return prev;
 
-      const rawDownloads = await getTransfers(
-        settings.apiEndpoint,
-        "downloads",
-        false,
-        supportsSortTransfers(settings.apiVersion) ? false : undefined,
-      );
-
-      return collateTransferResults(rawDownloads);
-    },
+  const downloads = createMemo((prev: TransferResult | undefined) =>
+    downloadStream(prev, settings.apiEndpoint, settings.apiVersion),
   );
 
   const pollScheduler = transferPollScheduler(5 * 1000);
@@ -171,3 +162,27 @@ const Download: Component<{ item: TransferItem }> = (props) => {
     </li>
   );
 };
+
+async function* downloadStream(
+  prev: TransferResult | undefined,
+  apiEndpoint: string | undefined,
+  apiVersion: string | undefined,
+) {
+  const [cached, setCached] = useLocalStorage<TransferResult>("downloads");
+  yield prev || cached();
+
+  if (!apiEndpoint || !apiVersion) {
+    return;
+  }
+
+  const rawDownloads = await getTransfers(
+    apiEndpoint,
+    "downloads",
+    false,
+    supportsSortTransfers(apiVersion) ? false : undefined,
+  );
+
+  const collated = collateTransferResults(rawDownloads);
+  yield collated;
+  setCached(collated);
+}

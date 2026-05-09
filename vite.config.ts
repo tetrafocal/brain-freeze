@@ -13,11 +13,5 @@ export default defineConfig({
   },
   build: {
     target: "esnext",
-    minify: false,
-    cssMinify: false,
-    terserOptions: {
-      compress: false,
-      mangle: false,
-    } as never,
   },
 });

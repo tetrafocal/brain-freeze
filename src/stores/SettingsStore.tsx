@@ -23,7 +23,11 @@ export type SettingsStore = {
 } & EndpointState;
 
 type EndpointState =
-  | { apiEndpoint: string | undefined; isApiEndpointHealthy: false }
+  | {
+      apiEndpoint: string | undefined;
+      apiVersion: undefined;
+      isApiEndpointHealthy: false;
+    }
   | { apiEndpoint: string; apiVersion: string; isApiEndpointHealthy: true };
 
 export type SettingsStoreContextType = StoreObject<SettingsStore> & {};
