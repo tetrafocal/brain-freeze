@@ -55,6 +55,11 @@ export type CollateOptions = {
    * @default true
    */
   sectionByStatus?: boolean;
+
+  /**
+   * @default true
+   */
+  reverse?: boolean;
 };
 
 export const EmptyTransferResult: TransferResult = {
@@ -69,7 +74,7 @@ export const EmptyTransferResult: TransferResult = {
 
 export function collateTransferResults(
   transfers: Transfers,
-  { sectionByStatus = true }: CollateOptions = {},
+  { sectionByStatus = true, reverse = true }: CollateOptions = {},
 ): TransferResult {
   const groups = new Map<string, TransferGroup>();
   const now = Date.now();
@@ -111,14 +116,27 @@ export function collateTransferResults(
 
   const finalGroups = (() => {
     if (!sectionByStatus) {
-      return Array.from(groups.values()).reverse();
+      if (reverse) {
+        return Array.from(groups.values()).reverse();
+      } else {
+        return Array.from(groups.values());
+      }
     }
 
     const [active, completed] = groups.values().reduce(
       (acc, transfer) => {
-        if (transfer.items.every((item) => item.transferStatus === "Finished"))
-          acc[1].unshift(transfer);
-        else acc[0].unshift(transfer);
+        const targetGroup = transfer.items.every(
+          (item) => item.transferStatus === "Finished",
+        )
+          ? acc[1]
+          : acc[0];
+
+        if (reverse) {
+          targetGroup.unshift(transfer);
+        } else {
+          targetGroup.push(transfer);
+        }
+
         return acc;
       },
       [[] as TransferGroup[], [] as TransferGroup[]],

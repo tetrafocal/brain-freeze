@@ -192,5 +192,8 @@ async function fetchUploads(apiEndpoint: string, apiVersion: string) {
     supportsSortTransfers(apiVersion) ? false : undefined,
   );
 
-  return collateTransferResults(rawUploads, { sectionByStatus: false });
+  return collateTransferResults(rawUploads, {
+    sectionByStatus: false,
+    reverse: false,
+  });
 }
