@@ -12,7 +12,7 @@ export type TransferResult = {
 };
 
 export type TransferGroup = {
-  key: string;
+  id: string;
 
   username: string;
   /**
@@ -34,6 +34,8 @@ export type TransferGroup = {
 };
 
 export type TransferItem = {
+  id: string;
+
   filename: string;
   fullTargetPath: string;
   fullSourcePath: string;
@@ -81,7 +83,7 @@ export function collateTransferResults(
 
     if (!groups.has(groupKey)) {
       groups.set(groupKey, {
-        key: groupKey,
+        id: groupKey,
         username: user,
         sourcePath,
         targetPath,
@@ -90,6 +92,7 @@ export function collateTransferResults(
     }
 
     groups.get(groupKey)?.items.push({
+      id: filename,
       filename,
       fullSourcePath: transfer.virtual_path,
       fullTargetPath: transfer.folder_path,
