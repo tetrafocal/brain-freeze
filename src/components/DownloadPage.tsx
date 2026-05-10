@@ -8,12 +8,9 @@ import {
 } from "../services/collateTransferResults";
 import { supportsSortTransfers } from "../utils/apiVersionUtil";
 import { getFolderAndFileName } from "../utils/getFolderAndFileName";
-import { Icon } from "./icons/Icon";
-import Folder from "./icons/lucide_folder.svg";
-import { Transfer, TransferGroupItem, useTransfer } from "./Transfer";
+import { TransferGroupItem, useTransfer } from "./Transfer";
 
 import pageStyles from "./Page.module.css";
-import transferStyles from "./Transfer.module.css";
 
 export const DownloadPage: Component = () => {
   const downloads = useTransfer({
