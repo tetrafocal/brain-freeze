@@ -1,31 +1,13 @@
-import {
-  Component,
-  createEffect,
-  createProjection,
-  For,
-  isRefreshing,
-  Loading,
-  Match,
-  onSettled,
-  refresh,
-  Show,
-  Switch,
-  useContext,
-} from "solid-js";
+import { Component, For, Loading, Match, Show, Switch } from "solid-js";
 
 import { getTransfers } from "../services/api/transfer";
 import {
   collateTransferResults,
-  EmptyTransferResult,
   TransferGroup,
   TransferItem,
-  TransferResult,
 } from "../services/collateTransferResults";
-import { SettingsStoreContext } from "../stores/SettingsStore";
 import { supportsSortTransfers } from "../utils/apiVersionUtil";
 import { getFolderAndFileName } from "../utils/getFolderAndFileName";
-import { transferPollScheduler } from "../utils/transferPollScheduler";
-import { useLocalStorage } from "../utils/useStorage";
 import { Icon, IconProps } from "./icons/Icon";
 import ArrowRight from "./icons/lucide_arrow_right.svg";
 import Check from "./icons/lucide_check.svg";
@@ -34,61 +16,13 @@ import Folder from "./icons/lucide_folder.svg";
 import Pause from "./icons/lucide_pause.svg";
 import Play from "./icons/lucide_play.svg";
 import Triangle from "./icons/lucide_triangle_alert.svg";
+import { useTransfer } from "./Transfer";
 
 import pageStyles from "./Page.module.css";
 import transferStyles from "./Transfer.module.css";
 
 export const UploadPage: Component = () => {
-  const { store: settings } = useContext(SettingsStoreContext);
-
-  const [cache, setCache] = useLocalStorage<TransferResult>(
-    "uploads",
-    EmptyTransferResult,
-  );
-
-  const uploads = createProjection((prev) => {
-    if (!isRefreshing() || !settings.apiEndpoint || !settings.apiVersion) {
-      return prev;
-    }
-
-    // promise is done inline so above check doesn't cause suspension
-    return fetchUploads(settings.apiEndpoint, settings.apiVersion).then(
-      (uploads) => {
-        setCache(uploads);
-        return uploads;
-      },
-    );
-  }, cache());
-
-  const pollScheduler = transferPollScheduler(5 * 1000);
-  onSettled(() => {
-    queueMicrotask(() => refresh(uploads));
-    return () => pollScheduler.dispose();
-  });
-
-  createEffect(
-    () => [uploads.fetchedAt, uploads.hasActive, uploads.hasQueued],
-    ([_fetchedAt, hasActiveUploads, hasQueuedUploads]) => {
-      if (hasActiveUploads) {
-        pollScheduler.setDelay(1.5 * 1000);
-      } else if (hasQueuedUploads) {
-        pollScheduler.setDelay(10 * 1000);
-      } else {
-        pollScheduler.setDelay(60 * 1000);
-      }
-
-      let disposed = false;
-      const timer = setInterval(() => {
-        if (disposed) return;
-        refresh(uploads);
-      }, pollScheduler.getDelay());
-
-      return () => {
-        disposed = true;
-        clearInterval(timer);
-      };
-    },
-  );
+  const uploads = useTransfer({ cacheKey: "uploads", fetcher: fetchUploads });
 
   return (
     <main class={pageStyles.page}>
