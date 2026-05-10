@@ -1,17 +1,16 @@
 import {
   Component,
   createEffect,
-  createProjection,
-  Element as SolidElement,
-  isRefreshing,
-  Match,
-  onSettled,
-  refresh,
-  Show,
-  Switch,
-  useContext,
-  For,
   createMemo,
+  createStore,
+  flush,
+  For,
+  onSettled,
+  reconcile,
+  Show,
+  Element as SolidElement,
+  untrack,
+  useContext,
 } from "solid-js";
 
 import {
@@ -21,7 +20,6 @@ import {
   TransferResult,
 } from "../services/collateTransferResults";
 import { SettingsStoreContext } from "../stores/SettingsStore";
-import { safeRefresh } from "../utils/safeRefresh";
 import { transferPollScheduler } from "../utils/transferPollScheduler";
 import { useLocalStorage } from "../utils/useStorage";
 import { Icon, IconProps } from "./icons/Icon";
@@ -43,7 +41,13 @@ export const TransferGroupItem: Component<{
   );
 
   return (
-    <article class={styles.group}>
+    <article
+      class={styles.group}
+      style={{
+        "view-transition-class": "tgroup",
+        "view-transition-name": `tgroup-${props.group.username}-${props.group.sourcePath.length}-${props.group.items.length}`,
+      }}
+    >
       <h2>
         <Icon icon={Folder} class={styles.prefixIcon} />
         {props.header}
@@ -117,11 +121,12 @@ export const Transfer: Component<{
             <span>{paddedProgress()}%</span>
           </Show>
           <span class={styles.statusText}>
-            <Switch fallback={<strong>{props.item.transferStatus}</strong>}>
-              <Match when={props.item.transferStatus in statusTextMap}>
-                {statusTextMap[props.item.transferStatus]}
-              </Match>
-            </Switch>
+            <Show
+              when={props.item.transferStatus in statusTextMap}
+              fallback={props.item.transferStatus}
+            >
+              {statusTextMap[props.item.transferStatus]}
+            </Show>
           </span>
         </div>
       </Show>
@@ -139,24 +144,40 @@ export function useTransfer({ cacheKey, fetcher }: UseTransferArgs) {
 
   const [cache, setCache] = useLocalStorage(cacheKey, EmptyTransferResult);
 
-  const transfers = createProjection((prev) => {
-    // if we're not in a refresh context, give a sync response
-    // otherwise, let the fetcher handle it asynchronously
-    if (!isRefreshing() || !settings.apiEndpoint || !settings.apiVersion) {
-      return prev;
-    }
+  const [transfers, setTransfers] = createStore<TransferResult>(cache());
 
-    return fetcher(settings.apiEndpoint, settings.apiVersion).then((result) => {
-      setCache(result);
-      return result;
-    });
-  }, cache());
+  const fetchTransfers = async () => {
+    if (!settings.apiEndpoint || !settings.apiVersion) return;
+
+    const previousFirstGroupFile = untrack(
+      () => transfers.groups[0]?.items[0]?.filename,
+    ) as string | undefined;
+
+    const newTransfers = await fetcher(
+      settings.apiEndpoint,
+      settings.apiVersion,
+    );
+
+    setCache(newTransfers);
+
+    if (
+      // only trigger a view transition if the first group file has changed
+      // as that indicates there's been a group move
+      previousFirstGroupFile !== newTransfers.groups[0]?.items[0]?.filename &&
+      document.startViewTransition
+    ) {
+      document.startViewTransition(() => {
+        setTransfers(reconcile(newTransfers, "id"));
+        flush();
+      });
+    } else {
+      setTransfers(reconcile(newTransfers, "id"));
+    }
+  };
 
   const pollScheduler = transferPollScheduler(5 * 1000);
   onSettled(() => {
-    // Solid 2.0 bug? refresh() called directly here triggers an unbounded-async-read warning
-    // delaying it to the next microtask lets the existing boundaries take effect and prevent the issue
-    queueMicrotask(() => refresh(transfers));
+    fetchTransfers();
     return () => pollScheduler.dispose();
   });
 
@@ -168,13 +189,13 @@ export function useTransfer({ cacheKey, fetcher }: UseTransferArgs) {
       } else if (hasQueuedUploads) {
         pollScheduler.setDelay(10 * 1000);
       } else {
-        pollScheduler.setDelay(60 * 1000);
+        pollScheduler.setDelay(30 * 1000);
       }
 
       let disposed = false;
       const timer = setTimeout(() => {
         if (disposed) return;
-        safeRefresh(transfers);
+        fetchTransfers();
       }, pollScheduler.getDelay());
 
       return () => {
